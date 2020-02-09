@@ -119,41 +119,12 @@ class ErgoContractCompilerImpl(val c: MacrosContext) {
       buildFromScalaAst(s, defId, paramMap, valDefNameIds)
 
     s match {
-      case Block(stats, expr) if !stats.exists(_.isInstanceOf[ValDef]) =>
+      case Block(stats, expr) if !stats.exists(_.isInstanceOf[ValDefApi]) =>
         reify(recurse(expr).splice)
-
-//      case Block(stats, expr) =>
-//        // TODO rewrite without nested BlockValue's (use ValUse in subsequent ValDef references)
-//        stats.filter(_.isInstanceOf[ValDef]).map(_.asInstanceOf[ValDef]) match {
-//          case h :: t =>
-//            reify(
-//              BlockValue(
-//                IndexedSeq(
-//                  Values.ValDef(
-//                    c.Expr[Int](Literal(Constant(defId + 1))).splice,
-//                    buildFromScalaAst(h.rhs,
-//                      defId + 1,
-//                      env, paramMap, valDefNameIds, valDefs).splice
-//                  )
-//                ),
-//                buildFromScalaAst(
-//                  Block(t, expr),
-//                  defId + 1,
-//                  env,
-//                  paramMap,
-//                  valDefNameIds + (h.name.toString -> (
-//                    defId + 1,
-//                    tpeToSType(h.rhs.tpe)
-//                  )),
-//                  valDefs
-//                ).splice
-//              )
-//            )
-//        }
 
       case Block(stats, expr) =>
         val (lastVdExprs, lastId, lastVdIds) = stats
-          .filter(_.isInstanceOf[ValDef])
+          .filter(_.isInstanceOf[ValDefApi])
           .foldLeft((List.empty[Expr[Values.ValDef]], defId, valDefNameIds)) {
             case ((valDefsExpr, lastUsedId, vdIds), ValDef(_, TermName(n), tpt, rhs)) =>
               val curId = lastUsedId + 1
@@ -165,12 +136,12 @@ class ErgoContractCompilerImpl(val c: MacrosContext) {
                       rhs,
                       curId,
                       paramMap,
-                      vdIds + (n -> (curId, tpeToSType(rhs.tpe)))
+                      vdIds + (n -> ((curId, tpeToSType(rhs.tpe))))
                     ).splice
                   )
                 ),
                 curId,
-                vdIds + (n -> (curId, tpeToSType(rhs.tpe)))
+                vdIds + (n -> ((curId, tpeToSType(rhs.tpe))))
               )
           }
         reify(
