@@ -41,13 +41,17 @@ lazy val rootProject = project
   .settings(moduleName := "ergo-scala-compiler")
   .aggregate(compiler)
 
-lazy val compiler = Project("compiler", file("compiler"))
+lazy val compiler =  project
+  .in(file("compiler"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= dependencies ++ testingDependencies
   )
   .settings(
-    scalacOptions ++= Seq("-Xlog-free-terms", "-Ymacro-debug-lite"),
+    scalacOptions ++= Seq(
+      "-Xlog-free-terms",
+//      "-Ymacro-debug-lite"
+    )
   )
 
 lazy val commonScalacOptions = List(
