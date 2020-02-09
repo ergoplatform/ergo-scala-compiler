@@ -3,7 +3,6 @@ package ergoplatform.org.compiler
 import org.ergoplatform.ErgoBox.{R2, R4}
 import org.ergoplatform.{ErgoBox, Height, Outputs, Self}
 import sigmastate.Values.{
-  BlockItem,
   BlockValue,
   ByteConstant,
   ErgoTree,
@@ -12,28 +11,14 @@ import sigmastate.Values.{
   LongConstant,
   SValue,
   SigmaPropConstant,
-  SigmaPropValue,
   ValUse
 }
 import sigmastate._
 import sigmastate.lang.Terms.ValueOps
-import sigmastate.utxo.{
-  ByIndex,
-  ExtractAmount,
-  ExtractId,
-  ExtractRegisterAs,
-  ExtractScriptBytes,
-  OptionGet,
-  OptionIsDefined,
-  SelectField,
-  SigmaPropBytes,
-  SizeOf
-}
+import sigmastate.utxo._
 import special.sigma.{Context, SigmaProp}
 
-import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
-import scala.reflect.api.Trees
 import scala.reflect.macros.TypecheckException
 import scala.reflect.macros.whitebox.{Context => MacrosContext}
 
