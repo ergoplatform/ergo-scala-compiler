@@ -18,7 +18,7 @@ lazy val commonSettings = Seq(
         </developer>
       </developers>,
   publishMavenStyle := true,
-  // publishTo := sonatypePublishToBundle.value,
+  publishTo := sonatypePublishToBundle.value,
   dynverSonatypeSnapshots := true
 )
 
