@@ -18,9 +18,10 @@ lazy val commonSettings = Seq(
         </developer>
       </developers>,
   publishMavenStyle := true,
-  // publishTo := sonatypePublishToBundle.value,
-  dynverSonatypeSnapshots := true
+  publishTo := sonatypePublishToBundle.value
 )
+
+dynverSonatypeSnapshots in ThisBuild := true
 
 lazy val allConfigDependency = "compile->compile;test->test"
 
