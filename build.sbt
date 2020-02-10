@@ -74,7 +74,7 @@ lazy val commonScalacOptions = List(
 // pgpPassphrase := sys.env.get("PGP_PASSPHRASE").map(_.toArray)
 // usePgpKeyHex("")
 
-lazy val credentialFile = Path.userHome / ".sbt" / ".ergo-scala-sonatype-credentials"
+lazy val credentialFile = Path.userHome / ".sbt" / ".sigma-sonatype-credentials"
 credentials ++= (for {
   file <- if (credentialFile.exists) Some(credentialFile) else None
 } yield Credentials(file)).toSeq
