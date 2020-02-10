@@ -1,4 +1,4 @@
-package ergoplatform.org.compiler
+package org.ergoplatform.compiler
 
 import org.ergoplatform.ErgoBox.{R2, R4}
 import org.ergoplatform.{ErgoBox, Height, Outputs, Self}
