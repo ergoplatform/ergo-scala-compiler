@@ -21,7 +21,10 @@ lazy val commonSettings = Seq(
   publishTo := sonatypePublishToBundle.value
 )
 
+// prefix version with "-SNAPSHOT" for builds without a git tag
 dynverSonatypeSnapshots in ThisBuild := true
+// use "-" instead of default "+"
+dynverSeparator in ThisBuild := "-"
 
 lazy val allConfigDependency = "compile->compile;test->test"
 
