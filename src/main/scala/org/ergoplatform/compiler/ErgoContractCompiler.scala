@@ -36,19 +36,17 @@ class ErgoContractCompilerImpl(val c: MacrosContext) {
   import c.universe._
   import c.universe.definitions._
 
-  private val typeConvertersFqn = "org.ergoplatform.sigma.verified.VerifiedTypeConverters"
-
   private def error(str: String): Nothing = c.abort(c.enclosingPosition, str)
 
   @inline
   private def convertColl(paramName: String): c.Expr[EvaluatedValue[SCollection[SType]]] =
     c.Expr[EvaluatedValue[SCollection[SType]]](
-      q"$typeConvertersFqn.VCollToErgoTree.to(${Ident(TermName(paramName))})"
+      q"org.ergoplatform.sigma.verified.VerifiedTypeConverters.VCollToErgoTree.to(${Ident(TermName(paramName))})"
     )
 
   @inline
   private def convertSigmaProp(paramName: String): c.Expr[SigmaProp] = c.Expr[SigmaProp](
-    q"$typeConvertersFqn.VSigmaPropToSigmaProp.to(${Ident(TermName(paramName))})"
+    q"org.ergoplatform.sigma.verified.VerifiedTypeConverters.VSigmaPropToSigmaProp.to(${Ident(TermName(paramName))})"
   )
 
   def tpeToSType(tpe: Type): SType = tpe.widen match {
@@ -346,7 +344,7 @@ class ErgoContractCompilerImpl(val c: MacrosContext) {
          |import special.sigma._
          |import special.collection._
          |import org.ergoplatform.dsl._
-         |import $typeConvertersFqn._
+         |import org.ergoplatform.sigma.verified.VerifiedTypeConverters._
          |
          |object SigmaContractHolder extends SigmaContractSyntax {
          |  import syntax._
