@@ -22,32 +22,62 @@ import scala.language.experimental.macros
 import scala.reflect.macros.TypecheckException
 import scala.reflect.macros.whitebox.{Context => MacrosContext}
 
-case class ErgoContract(scalaFunc: Context => SigmaProp, prop: SValue) {
-  val ergoTree: ErgoTree = ErgoTree.fromProposition(prop.asSigmaProp)
-}
-
-object ErgoContractCompiler {
-
-  def compile[A, B](verifiedContract: A => B): ErgoContract =
-    macro ErgoContractCompilerImpl.compile[A, B]
-}
-
-class ErgoContractCompilerImpl(val c: MacrosContext) {
+// TODO: extract
+final class ErgoScalaVerifiedCompiler(override val c: MacrosContext)
+  extends ErgoScalaCompilerImpl(c, true) {
   import c.universe._
   import c.universe.definitions._
 
-  private def error(str: String): Nothing = c.abort(c.enclosingPosition, str)
-
-  @inline
-  private def convertColl(paramName: String): c.Expr[EvaluatedValue[SCollection[SType]]] =
+  override def convertColl(
+    paramName: String
+  ): c.Expr[EvaluatedValue[SCollection[SType]]] =
     c.Expr[EvaluatedValue[SCollection[SType]]](
       q"org.ergoplatform.sigma.verified.VerifiedTypeConverters.VCollToErgoTree.to(${Ident(TermName(paramName))})"
     )
 
-  @inline
-  private def convertSigmaProp(paramName: String): c.Expr[SigmaProp] = c.Expr[SigmaProp](
+  def compile[A, B](contract: c.Expr[A => B]): c.Expr[ErgoContract] =
+    super.compileImpl(contract)
+
+  override def convertSigmaProp(paramName: String): c.Expr[SigmaProp] = c.Expr[SigmaProp](
     q"org.ergoplatform.sigma.verified.VerifiedTypeConverters.VSigmaPropToSigmaProp.to(${Ident(TermName(paramName))})"
   )
+
+}
+
+// TODO: extract
+final class ErgoScalaNonVerifiedCompiler(override val c: MacrosContext)
+  extends ErgoScalaCompilerImpl(c, false) {
+  import c.universe._
+  import c.universe.definitions._
+
+  def compile(contract: c.Expr[Context => SigmaProp]): c.Expr[ErgoContract] =
+    super.compileImpl(contract)
+
+  override def convertColl(
+    paramName: String
+  ): c.Expr[EvaluatedValue[SCollection[SType]]] =
+    c.Expr[EvaluatedValue[SCollection[SType]]](
+      q"org.ergoplatform.compiler.util.collToErgoTree(${Ident(TermName(paramName))})"
+    )
+
+  override def convertSigmaProp(paramName: String): c.Expr[SigmaProp] =
+    c.Expr[SigmaProp](Ident(TermName(paramName)))
+}
+
+sealed abstract class ErgoScalaCompilerImpl(
+  val c: MacrosContext,
+  // TODO: remove
+  addVerifiedTypeConv: Boolean
+) {
+  import c.universe._
+  import c.universe.definitions._
+
+  private def error(str: String): Nothing = c.abort(c.enclosingPosition, str)
+  private def info(str: String): Unit     = c.info(c.enclosingPosition, str, force = false)
+
+  protected def convertColl(paramName: String): c.Expr[EvaluatedValue[SCollection[SType]]]
+  // TODO: rename?
+  protected def convertSigmaProp(paramName: String): c.Expr[SigmaProp]
 
   def tpeToSType(tpe: Type): SType = tpe.widen match {
     case BooleanTpe => SBoolean
@@ -344,7 +374,9 @@ class ErgoContractCompilerImpl(val c: MacrosContext) {
          |import special.sigma._
          |import special.collection._
          |import org.ergoplatform.dsl._
-         |import org.ergoplatform.sigma.verified.VerifiedTypeConverters._
+         |${if (addVerifiedTypeConv)
+           "import org.ergoplatform.sigma.verified.VerifiedTypeConverters._"
+         else ""}
          |
          |object SigmaContractHolder extends SigmaContractSyntax {
          |  import syntax._
@@ -370,20 +402,20 @@ class ErgoContractCompilerImpl(val c: MacrosContext) {
     }
   }
 
-  def compile[A, B](verifiedContract: c.Expr[A => B]): c.Expr[ErgoContract] = {
-    println(s"compile: ${showRaw(verifiedContract.tree)}")
-    val contractMethodName = verifiedContract.tree
+  def compileImpl[A, B](contract: c.Expr[A => B]): c.Expr[ErgoContract] = {
+    info(s"compiling closure: ${showRaw(contract.tree)}")
+    val contractMethodName = contract.tree
       .collect { case sel: Select => sel }
       .headOption
       .getOrElse(error("method call for the contract is expected"))
       .name
       .toString
-    val contractTree = buildScalaFunc(verifiedContract.tree)
+    val contractTree = buildScalaFunc(contract.tree)
     val defDef = contractTree
       .collect { case dd @ DefDef(_, TermName(`contractMethodName`), _, _, _, _) => dd }
       .headOption
       .getOrElse(error("cannot find DefDef for the contract method"))
-    val compilingContractApp = verifiedContract.tree
+    val compilingContractApp = contract.tree
       .collect { case app: Apply => app }
       .headOption
       .getOrElse(error("cannot find Apply for the contract method"))

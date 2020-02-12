@@ -1,5 +1,4 @@
 import scala.language.postfixOps
-import scala.util.Try
 
 lazy val commonSettings = Seq(
   scalacOptions ++= commonScalacOptions,
@@ -34,7 +33,7 @@ lazy val dependencies = Seq(
 )
 
 lazy val testingDependencies = Seq(
-  "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+  "org.scalatest" %% "scalatest" % "3.0.5" % Test,
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test
 )
 
