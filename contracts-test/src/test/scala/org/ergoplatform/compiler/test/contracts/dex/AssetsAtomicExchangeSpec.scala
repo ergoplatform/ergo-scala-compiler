@@ -1,15 +1,13 @@
-package org.ergoplatform.compiler.test
+package org.ergoplatform.compiler.test.contracts.dex
 
 import org.ergoplatform.ErgoBox.{R2, R4}
 import org.ergoplatform._
-import org.ergoplatform.compiler.test.contracts.dex.AssetsAtomicExchangeCompilation.{
-  buyerContractInstance,
-  sellerContractInstance
-}
+import org.ergoplatform.compiler.test.contracts.dex.verified.AssetsAtomicExchangeVerifiedCompilationConverted
 import org.scalacheck.Arbitrary.arbLong
 import scorex.crypto.hash.Digest32
 import sigmastate.Values._
 import sigmastate._
+import sigmastate.basics.DLogProtocol.ProveDlog
 import sigmastate.eval.CSigmaProp
 import sigmastate.eval.Extensions._
 import sigmastate.helpers.{
@@ -21,6 +19,7 @@ import sigmastate.helpers.{
 import sigmastate.interpreter.ProverResult
 import sigmastate.serialization.generators.ObjectGenerators
 import sigmastate.utxo._
+import special.collection.Coll
 import special.sigma.SigmaProp
 
 import scala.language.{implicitConversions, postfixOps}
@@ -46,172 +45,223 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
   implicit private def toSigmaContext(ergoCtx: ErgoLikeContext): special.sigma.Context =
     ergoCtx.toSigmaContext(IR, false)
 
-  property("buyer contract ergo tree") {
-    forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary, proveDlogGen) {
-      case (tokenId, tokenAmount, proveDlogPk) =>
-        val pk: SigmaProp = CSigmaProp(proveDlogPk)
-        val c =
-          buyerContractInstance(tokenId, tokenAmount, pk)
-        val expectedProp = SigmaOr(
-          Seq(
-            SigmaPropConstant(proveDlogPk),
-            BinAnd(
-              BinAnd(
-                GT(
-                  SizeOf(Outputs),
-                  IntConstant(0)
-                ),
-                OptionIsDefined(
+  def buyerContractExpectedProp(
+    buyer: ProveDlog,
+    tokenId: Coll[Byte],
+    tokenAmount: Long
+  ): SigmaPropValue =
+    SigmaOr(
+      Seq(
+        SigmaPropConstant(buyer),
+        BinAnd(
+          BinAnd(
+            GT(
+              SizeOf(Outputs),
+              IntConstant(0)
+            ),
+            OptionIsDefined(
+              ExtractRegisterAs(
+                ByIndex(Outputs, IntConstant(0), None),
+                R4,
+                SOption(SCollectionType(SByte))
+              )
+            )
+          ),
+          BlockValue(
+            Vector(
+              // tokens
+              ValDef(
+                1,
+                List(),
+                ExtractRegisterAs(
+                  ByIndex(Outputs, IntConstant(0), None),
+                  R2,
+                  SOption(SCollectionType(STuple(SCollectionType(SByte), SLong)))
+                ).get
+              ),
+              ValDef(
+                2,
+                List(),
+                BinAnd(
+                  BinAnd(
+                    GT(
+                      SizeOf(
+                        ValUse(
+                          1,
+                          SCollectionType(STuple(SCollectionType(SByte), SLong))
+                        )
+                      ),
+                      IntConstant(0)
+                    ),
+                    EQ(
+                      SelectField(
+                        ByIndex(
+                          ValUse(
+                            1,
+                            SCollectionType(STuple(SCollectionType(SByte), SLong))
+                          ),
+                          IntConstant(0),
+                          None
+                        ),
+                        1
+                      ),
+                      ByteArrayConstant(tokenId)
+                    )
+                  ),
+                  GE(
+                    SelectField(
+                      ByIndex(
+                        ValUse(
+                          1,
+                          SCollectionType(STuple(SCollectionType(SByte), SLong))
+                        ),
+                        IntConstant(0),
+                        None
+                      ),
+                      2
+                    ),
+                    LongConstant(tokenAmount)
+                  )
+                )
+              ),
+              ValDef(
+                3,
+                List(),
+                EQ(
                   ExtractRegisterAs(
                     ByIndex(Outputs, IntConstant(0), None),
                     R4,
                     SOption(SCollectionType(SByte))
-                  )
+                  ).get,
+                  ExtractId(Self)
+                )
+              )
+            ),
+            BinAnd(
+              BinAnd(
+                ValUse(2, SBoolean),
+                EQ(
+                  ExtractScriptBytes(ByIndex(Outputs, IntConstant(0), None)),
+                  SigmaPropBytes(SigmaPropConstant(buyer))
                 )
               ),
-              BlockValue(
-                Vector(
-                  // tokens
-                  ValDef(
-                    1,
-                    List(),
-                    ExtractRegisterAs(
-                      ByIndex(Outputs, IntConstant(0), None),
-                      R2,
-                      SOption(SCollectionType(STuple(SCollectionType(SByte), SLong)))
-                    ).get
-                  ),
-                  ValDef(
-                    2,
-                    List(),
-                    BinAnd(
-                      BinAnd(
-                        GT(
-                          SizeOf(
-                            ValUse(
-                              1,
-                              SCollectionType(STuple(SCollectionType(SByte), SLong))
-                            )
-                          ),
-                          IntConstant(0)
-                        ),
-                        EQ(
-                          SelectField(
-                            ByIndex(
-                              ValUse(
-                                1,
-                                SCollectionType(STuple(SCollectionType(SByte), SLong))
-                              ),
-                              IntConstant(0),
-                              None
-                            ),
-                            1
-                          ),
-                          ByteArrayConstant(tokenId)
-                        )
-                      ),
-                      GE(
-                        SelectField(
-                          ByIndex(
-                            ValUse(
-                              1,
-                              SCollectionType(STuple(SCollectionType(SByte), SLong))
-                            ),
-                            IntConstant(0),
-                            None
-                          ),
-                          2
-                        ),
-                        LongConstant(tokenAmount)
-                      )
-                    )
-                  ),
-                  ValDef(
-                    3,
-                    List(),
-                    EQ(
-                      ExtractRegisterAs(
-                        ByIndex(Outputs, IntConstant(0), None),
-                        R4,
-                        SOption(SCollectionType(SByte))
-                      ).get,
-                      ExtractId(Self)
-                    )
-                  )
-                ),
-                BinAnd(
-                  BinAnd(
-                    ValUse(2, SBoolean),
-                    EQ(
-                      ExtractScriptBytes(ByIndex(Outputs, IntConstant(0), None)),
-                      SigmaPropBytes(SigmaPropConstant(proveDlogPk))
-                    )
-                  ),
-                  ValUse(3, SBoolean)
-                )
-              ).asInstanceOf[Value[SBoolean.type]]
-            ).toSigmaProp
-          )
-        )
-        c.prop shouldEqual expectedProp
-    }
-  }
+              ValUse(3, SBoolean)
+            )
+          ).asInstanceOf[Value[SBoolean.type]]
+        ).toSigmaProp
+      )
+    )
 
-  property("seller contract ergo tree") {
-    forAll(arbLong.arbitrary, proveDlogGen) {
-      case (ergAmount, proveDlogPk) =>
-        val pk: SigmaProp = CSigmaProp(proveDlogPk)
-        val c             = sellerContractInstance(ergAmount, pk)
-        val expectedProp = SigmaOr(
-          Seq(
-            SigmaPropConstant(proveDlogPk),
-            BoolToSigmaProp(
-              BinAnd(
-                BinAnd(
-                  GT(SizeOf(Outputs), IntConstant(1)),
-                  OptionIsDefined(
+  def sellerContractExpectedProp(seller: ProveDlog, ergAmount: Long): SigmaPropValue =
+    SigmaOr(
+      Seq(
+        SigmaPropConstant(seller),
+        BoolToSigmaProp(
+          BinAnd(
+            BinAnd(
+              GT(SizeOf(Outputs), IntConstant(1)),
+              OptionIsDefined(
+                ExtractRegisterAs(
+                  ByIndex(Outputs, IntConstant(1), None),
+                  R4,
+                  SOption(SCollectionType(SByte))
+                )
+              )
+            ),
+            BlockValue(
+              Vector(
+                ValDef(
+                  1,
+                  List(),
+                  EQ(
                     ExtractRegisterAs(
                       ByIndex(Outputs, IntConstant(1), None),
                       R4,
                       SOption(SCollectionType(SByte))
-                    )
+                    ).get,
+                    ExtractId(Self)
                   )
-                ),
-                BlockValue(
-                  Vector(
-                    ValDef(
-                      1,
-                      List(),
-                      EQ(
-                        ExtractRegisterAs(
-                          ByIndex(Outputs, IntConstant(1), None),
-                          R4,
-                          SOption(SCollectionType(SByte))
-                        ).get,
-                        ExtractId(Self)
-                      )
-                    )
+                )
+              ),
+              BinAnd(
+                BinAnd(
+                  GE(
+                    ExtractAmount(ByIndex(Outputs, IntConstant(1), None)),
+                    LongConstant(ergAmount)
                   ),
-                  BinAnd(
-                    BinAnd(
-                      GE(
-                        ExtractAmount(ByIndex(Outputs, IntConstant(1), None)),
-                        LongConstant(ergAmount)
-                      ),
-                      ValUse(1, SBoolean)
-                    ),
-                    EQ(
-                      ExtractScriptBytes(ByIndex(Outputs, IntConstant(1), None)),
-                      SigmaPropBytes(SigmaPropConstant(proveDlogPk))
-                    )
-                  )
-                ).asInstanceOf[Value[SBoolean.type]]
+                  ValUse(1, SBoolean)
+                ),
+                EQ(
+                  ExtractScriptBytes(ByIndex(Outputs, IntConstant(1), None)),
+                  SigmaPropBytes(SigmaPropConstant(seller))
+                )
               )
-            )
+            ).asInstanceOf[Value[SBoolean.type]]
           )
         )
+      )
+    )
+
+  property("buyer contract(method call): ergo tree") {
+    forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary, proveDlogGen) {
+      case (tokenId, tokenAmount, proveDlogPk) =>
+        val pk: SigmaProp = CSigmaProp(proveDlogPk)
+        val c =
+          AssetsAtomicExchangeCompilation.buyerContractInstance(tokenId, tokenAmount, pk)
+        val expectedProp = buyerContractExpectedProp(proveDlogPk, tokenId, tokenAmount)
+        c.prop shouldEqual expectedProp
+    }
+  }
+
+  property("buyer contract verified(method call): ergo tree") {
+    forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary, proveDlogGen) {
+      case (tokenId, tokenAmount, proveDlogPk) =>
+        val pk: SigmaProp = CSigmaProp(proveDlogPk)
+        val c =
+          AssetsAtomicExchangeVerifiedCompilationConverted
+            .buyerContractInstanceNonVerifiedTypes(tokenId, tokenAmount, pk)
+        val expectedProp = buyerContractExpectedProp(proveDlogPk, tokenId, tokenAmount)
+        c.prop shouldEqual expectedProp
+    }
+  }
+
+  property("buyer contract(body): ergo tree") {
+    val prop                = AssetsAtomicExchangeBodyCompilation.buyerContract
+    val expectedProveDlog   = AssetsAtomicExchangeBodyCompilation.buyerProveDlog
+    val expectedTokenId     = AssetsAtomicExchangeBodyCompilation.tokenId
+    val expectedTokenAmount = AssetsAtomicExchangeBodyCompilation.buyerBidTokenAmount
+    val expectedProp =
+      buyerContractExpectedProp(expectedProveDlog, expectedTokenId, expectedTokenAmount)
+    prop shouldEqual expectedProp
+  }
+
+  property("seller contract(method call): ergo tree") {
+    forAll(arbLong.arbitrary, proveDlogGen) {
+      case (ergAmount, proveDlogPk) =>
+        val pk: SigmaProp = CSigmaProp(proveDlogPk)
+        val c             = AssetsAtomicExchangeCompilation.sellerContractInstance(ergAmount, pk)
+        val expectedProp  = sellerContractExpectedProp(proveDlogPk, ergAmount)
         assert(c.prop == expectedProp)
     }
+  }
+
+  property("seller contract verified(method call): ergo tree") {
+    forAll(arbLong.arbitrary, proveDlogGen) {
+      case (ergAmount, proveDlogPk) =>
+        val pk: SigmaProp = CSigmaProp(proveDlogPk)
+        val c = AssetsAtomicExchangeVerifiedCompilationConverted
+          .sellerContractInstanceNonVerifiedTypes(ergAmount, pk)
+        val expectedProp = sellerContractExpectedProp(proveDlogPk, ergAmount)
+        assert(c.prop == expectedProp)
+    }
+  }
+
+  property("seller contract(body): ergo tree") {
+    val expectedProveDlog = AssetsAtomicExchangeBodyCompilation.sellerProveDlog
+    val expectedErgAmount = AssetsAtomicExchangeBodyCompilation.sellerAskNanoErgs
+    val prop              = AssetsAtomicExchangeBodyCompilation.sellerContract
+    val expectedProp      = sellerContractExpectedProp(expectedProveDlog, expectedErgAmount)
+    prop shouldEqual expectedProp
   }
 
   property("buyer contract, buyer claim") {
@@ -222,7 +272,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     val pubkey      = prover.dlogSecrets.head.publicImage
 
     val pk: SigmaProp = CSigmaProp(pubkey)
-    val c = buyerContractInstance(
+    val c = AssetsAtomicExchangeCompilation.buyerContractInstance(
       tokenId.toColl,
       tokenAmount,
       pk
@@ -250,7 +300,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
 
     forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary) {
       case (tokenId, tokenAmount) =>
-        val contract = buyerContractInstance(
+        val contract = AssetsAtomicExchangeCompilation.buyerContractInstance(
           tokenId     = tokenId,
           tokenAmount = tokenAmount,
           pkA         = buyerPk
@@ -289,7 +339,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
           )
         )
 
-        val contract = buyerContractInstance(
+        val contract = AssetsAtomicExchangeCompilation.buyerContractInstance(
           tokenId     = tokenId,
           tokenAmount = tokenAmount,
           pkA         = buyerPk
@@ -311,7 +361,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     val pubkey    = prover.dlogSecrets.head.publicImage
 
     val pk: SigmaProp = CSigmaProp(pubkey)
-    val c             = sellerContractInstance(ergAmount, pk)
+    val c             = AssetsAtomicExchangeCompilation.sellerContractInstance(ergAmount, pk)
     val tree          = c.ergoTree
 
     val spendingTransaction = createTransaction(
@@ -342,7 +392,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     forAll(arbLong.arbitrary) {
       case (ergAmount) =>
         val contract =
-          sellerContractInstance(ergAmount, sellerPk)
+          AssetsAtomicExchangeCompilation.sellerContractInstance(ergAmount, sellerPk)
 
         val contextBeforeDeadline = ctx(50, tx)
         contract.scalaFunc(contextBeforeDeadline) shouldEqual sellerPk
@@ -377,7 +427,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
           )
         )
         val contract =
-          sellerContractInstance(ergAmount, sellerPkProp)
+          AssetsAtomicExchangeCompilation.sellerContractInstance(ergAmount, sellerPkProp)
 
         val ctxBeforeDeadline = ctx(50, tx)
         contract.scalaFunc(ctxBeforeDeadline) shouldEqual CSigmaProp(TrivialProp.TrueProp)

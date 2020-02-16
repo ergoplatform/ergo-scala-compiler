@@ -1,12 +1,11 @@
-package org.ergoplatform.compiler.test.contracts.dex
+package org.ergoplatform.compiler.test.contracts.dex.verified
 
-import org.ergoplatform.compiler.{ErgoContract, ErgoScalaCompiler}
-import special.collection.Coll
-import special.sigma.{Context, SigmaContract, SigmaDslBuilder, SigmaProp}
+import org.ergoplatform.compiler._
+import org.ergoplatform.sigma.verified._
 
-sealed abstract class AssetsAtomicExchange extends SigmaContract {
+import scala.language.{implicitConversions, postfixOps}
 
-  override def builder: SigmaDslBuilder = ???
+sealed abstract class AssetsAtomicExchangeVerified extends SigmaContract {
 
   def buyer(
     ctx: Context,
@@ -45,19 +44,19 @@ sealed abstract class AssetsAtomicExchange extends SigmaContract {
   }
 }
 
-object AssetsAtomicExchangeCompilation extends AssetsAtomicExchange {
+object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerified {
 
   def buyerContractInstance(
     tokenId: Coll[Byte],
     tokenAmount: Long,
     pkA: SigmaProp
   ): ErgoContract =
-    ErgoScalaCompiler.compile { context: Context =>
+    ErgoScalaCompiler.contractVerified { context: Context =>
       buyer(context, tokenId, tokenAmount, pkA)
     }
 
   def sellerContractInstance(ergAmount: Long, pkB: SigmaProp): ErgoContract =
-    ErgoScalaCompiler.compile { context: Context =>
+    ErgoScalaCompiler.contractVerified { context: Context =>
       seller(context, ergAmount, pkB)
     }
 
