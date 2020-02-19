@@ -2,6 +2,7 @@ package org.ergoplatform.compiler.test.contracts.dex
 
 import org.ergoplatform.ErgoBox.{R2, R4}
 import org.ergoplatform._
+import org.ergoplatform.compiler.ErgoContract
 import org.ergoplatform.compiler.test.contracts.dex.verified.AssetsAtomicExchangeVerifiedCompilationConverted
 import org.scalacheck.Arbitrary.arbLong
 import scorex.crypto.hash.Digest32
@@ -21,6 +22,7 @@ import sigmastate.serialization.generators.ObjectGenerators
 import sigmastate.utxo._
 import special.collection.Coll
 import special.sigma.SigmaProp
+import sigmastate.lang.Terms.ValueOps
 
 import scala.language.{implicitConversions, postfixOps}
 
@@ -207,7 +209,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
       )
     )
 
-  property("buyer contract(method call): ergo tree") {
+  ignore("buyer contract(method call): ergo tree") {
     forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary, proveDlogGen) {
       case (tokenId, tokenAmount, proveDlogPk) =>
         val pk: SigmaProp = CSigmaProp(proveDlogPk)
@@ -236,16 +238,17 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
 //  }
 
   property("buyer contract(body): ergo tree") {
-    val prop                = AssetsAtomicExchangeBodyCompilation.buyerContract
-    val expectedProveDlog   = toProveDlog(AssetsAtomicExchangeBodyCompilation.buyer)
-    val expectedTokenId     = AssetsAtomicExchangeBodyCompilation.tokenId
-    val expectedTokenAmount = AssetsAtomicExchangeBodyCompilation.buyerBidTokenAmount
-    val expectedProp =
-      buyerContractExpectedProp(expectedProveDlog, expectedTokenId, expectedTokenAmount)
-    prop shouldEqual expectedProp
+    forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary, proveDlogGen) {
+      case (tokenId, tokenAmount, proveDlogPk) =>
+        val pk: SigmaProp = CSigmaProp(proveDlogPk)
+        val prop =
+          AssetsAtomicExchangeBodyCompilation.buyerContract(tokenId, tokenAmount, pk)
+        val expectedProp = buyerContractExpectedProp(proveDlogPk, tokenId, tokenAmount)
+        prop shouldEqual expectedProp
+    }
   }
 
-  property("seller contract(method call): ergo tree") {
+  ignore("seller contract(method call): ergo tree") {
     forAll(arbLong.arbitrary, proveDlogGen) {
       case (ergAmount, proveDlogPk) =>
         val pk: SigmaProp = CSigmaProp(proveDlogPk)
@@ -274,20 +277,31 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
 //    prop shouldEqual expectedProp
 //  }
 
-  property("buyer contract, buyer claim") {
+  type BuyerContractSource = (Coll[Byte], Long, SigmaProp) => SigmaPropValue
+
+//  def buyerContractAdaptor(
+//    in: (Coll[Byte], Long, SigmaProp) => SValue
+//  ): BuyerContractSource = ???
+
+  def buyerContractAdaptor(
+    in: (Coll[Byte], Long, SigmaProp) => ErgoContract
+  ): BuyerContractSource = { (tokenId, tokenAmount, pk) =>
+    in(tokenId, tokenAmount, pk).prop.asSigmaProp
+  }
+
+  private def testTreeBuyerContractCancels(contractSource: BuyerContractSource) = {
     val prover      = new ContextEnrichingTestProvingInterpreter
     val verifier    = new ErgoLikeTestInterpreter
     val tokenId     = tokenIdGen.sample.get
     val tokenAmount = 100L
     val pubkey      = prover.dlogSecrets.head.publicImage
 
-    val pk: SigmaProp = CSigmaProp(pubkey)
-    val c = AssetsAtomicExchangeCompilation.buyerContractInstance(
-      tokenId.toColl,
+    val prop = contractSource(
+      tokenId.asInstanceOf[Array[Byte]].toColl,
       tokenAmount,
-      pk
+      CSigmaProp(pubkey)
     )
-    val tree = c.ergoTree
+    val tree = ErgoTree.fromProposition(prop)
 
     val spendingTransaction = createTransaction(
       IndexedSeq(
@@ -299,6 +313,76 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
 
     val pr = prover.prove(tree, context, fakeMessage).get
     verifier.verify(tree, context, pr, fakeMessage).get._1 shouldBe true
+  }
+
+  property("buyer contract(body), buyer claim") {
+    testTreeBuyerContractCancels(AssetsAtomicExchangeBodyCompilation.buyerContract)
+  }
+
+  ignore("buyer contract(method call), buyer claim") {
+    testTreeBuyerContractCancels(
+      buyerContractAdaptor(AssetsAtomicExchangeCompilation.buyerContractInstance)
+    )
+  }
+
+  property("buyer contract(body), no tokens") {
+    val verifier           = new ErgoLikeTestInterpreter
+    val prover             = new ContextEnrichingTestProvingInterpreter
+    val pubkey             = prover.dlogSecrets.head.publicImage
+    val buyerPk: SigmaProp = CSigmaProp(pubkey)
+    val txNoTokens         = createTransaction(IndexedSeq(ErgoBox(1, TrivialProp.TrueProp, 0)))
+
+    forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary) {
+      case (tokenId, tokenAmount) =>
+        val prop =
+          AssetsAtomicExchangeBodyCompilation.buyerContract(tokenId, tokenAmount, buyerPk)
+
+        val contextBeforeDeadline = ctx(50, txNoTokens)
+        verifier
+          .verify(
+            prop,
+            contextBeforeDeadline,
+            ProverResult.empty,
+            fakeMessage
+          )
+          .isSuccess shouldBe false
+    }
+  }
+
+  property("buyer contract(body), tokens") {
+    val verifier           = new ErgoLikeTestInterpreter
+    val prover             = new ContextEnrichingTestProvingInterpreter
+    val pubkey             = prover.dlogSecrets.head.publicImage
+    val buyerPk: SigmaProp = CSigmaProp(pubkey)
+
+    forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary) {
+      case (tokenId, tokenAmount) =>
+        val txWithTokens = createTransaction(
+          IndexedSeq(
+            ErgoBox(
+              value               = 1,
+              ergoTree            = pubkey,
+              creationHeight      = 0,
+              additionalTokens    = Seq((Digest32 @@ tokenId.toArray, tokenAmount)),
+              additionalRegisters = Map(ErgoBox.R4 -> ByteArrayConstant(fakeSelf.id))
+            )
+          )
+        )
+
+        val prop =
+          AssetsAtomicExchangeBodyCompilation.buyerContract(tokenId, tokenAmount, buyerPk)
+
+        val ctxBeforeDeadline = ctx(50, txWithTokens)
+        verifier
+          .verify(
+            ErgoTree.fromProposition(prop),
+            ctxBeforeDeadline,
+            ProverResult.empty,
+            fakeMessage
+          )
+          .get
+          ._1 shouldEqual true
+    }
   }
 
   property("buyer contract, no tokens") {
@@ -329,7 +413,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
-  property("buyer contract, tokens") {
+  ignore("buyer contract, tokens") {
     val verifier           = new ErgoLikeTestInterpreter
     val prover             = new ContextEnrichingTestProvingInterpreter
     val pubkey             = prover.dlogSecrets.head.publicImage
@@ -364,7 +448,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
-  property("seller contract, seller claim") {
+  ignore("seller contract, seller claim") {
     val prover    = new ContextEnrichingTestProvingInterpreter
     val verifier  = new ErgoLikeTestInterpreter
     val ergAmount = 100L
@@ -417,7 +501,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
-  property("seller contract, with buyer") {
+  ignore("seller contract, with buyer") {
     val verifier                = new ErgoLikeTestInterpreter
     val prover                  = new ContextEnrichingTestProvingInterpreter
     val sellerPk                = prover.dlogSecrets.head.publicImage
