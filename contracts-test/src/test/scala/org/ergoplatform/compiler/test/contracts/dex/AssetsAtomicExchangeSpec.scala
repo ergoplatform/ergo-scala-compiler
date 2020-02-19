@@ -279,19 +279,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
 //    }
 //  }
 
-//  property("seller contract(body): ergo tree") {
-//    val expectedProveDlog = toProveDlog(AssetsAtomicExchangeBodyCompilation.seller)
-//    val expectedErgAmount = AssetsAtomicExchangeBodyCompilation.sellerAskNanoErgs
-//    val prop              = AssetsAtomicExchangeBodyCompilation.sellerContract
-//    val expectedProp      = sellerContractExpectedProp(expectedProveDlog, expectedErgAmount)
-//    prop shouldEqual expectedProp
-//  }
-
   type BuyerContractSource = (Coll[Byte], Long, SigmaProp) => SigmaPropValue
-
-//  def buyerContractAdaptor(
-//    in: (Coll[Byte], Long, SigmaProp) => SValue
-//  ): BuyerContractSource = ???
 
   def buyerContractAdaptor(
     in: (Coll[Byte], Long, SigmaProp) => ErgoContract
@@ -486,7 +474,35 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     verifier.verify(tree, context, pr, fakeMessage).get._1 shouldBe true
   }
 
-  property("seller contract, no buyer") {
+  property("seller contract(body), seller claim") {
+    val prover    = new ContextEnrichingTestProvingInterpreter
+    val verifier  = new ErgoLikeTestInterpreter
+    val ergAmount = 100L
+    val pubkey    = prover.dlogSecrets.head.publicImage
+
+    val pk: SigmaProp = CSigmaProp(pubkey)
+    val prop          = AssetsAtomicExchangeBodyCompilation.sellerContract(ergAmount, pk)
+    val tree          = ErgoTree.fromProposition(prop)
+
+    val spendingTransaction = createTransaction(
+      IndexedSeq(
+        ErgoBox(value = 1, ergoTree = TrivialProp.TrueProp, creationHeight = 0),
+        // second box as a workaround for costing issue
+        // https://github.com/ScorexFoundation/sigmastate-interpreter/issues/628
+        ErgoBox(
+          value          = 1,
+          ergoTree       = TrivialProp.TrueProp, // any address
+          creationHeight = 0
+        )
+      )
+    )
+    val context = ctx(50, spendingTransaction)
+
+    val pr = prover.prove(tree, context, fakeMessage).get
+    verifier.verify(tree, context, pr, fakeMessage).get._1 shouldBe true
+  }
+
+  ignore("seller contract, no buyer") {
     val verifier            = new ErgoLikeTestInterpreter
     val prover              = new ContextEnrichingTestProvingInterpreter
     val pubkey              = prover.dlogSecrets.head.publicImage
@@ -503,6 +519,30 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
         verifier
           .verify(
             contract.ergoTree,
+            contextBeforeDeadline,
+            ProverResult.empty,
+            fakeMessage
+          )
+          .isSuccess shouldBe false
+    }
+  }
+
+  property("seller contract(body), no buyer") {
+    val verifier            = new ErgoLikeTestInterpreter
+    val prover              = new ContextEnrichingTestProvingInterpreter
+    val pubkey              = prover.dlogSecrets.head.publicImage
+    val sellerPk: SigmaProp = CSigmaProp(pubkey)
+    val tx                  = createTransaction(IndexedSeq(ErgoBox(1, TrivialProp.TrueProp, 0)))
+
+    forAll(arbLong.arbitrary) {
+      case (ergAmount) =>
+        val prop =
+          AssetsAtomicExchangeBodyCompilation.sellerContract(ergAmount, sellerPk)
+
+        val contextBeforeDeadline = ctx(50, tx)
+        verifier
+          .verify(
+            prop,
             contextBeforeDeadline,
             ProverResult.empty,
             fakeMessage
@@ -537,6 +577,36 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
         contract.scalaFunc(ctxBeforeDeadline) shouldEqual CSigmaProp(TrivialProp.TrueProp)
         verifier
           .verify(contract.ergoTree, ctxBeforeDeadline, ProverResult.empty, fakeMessage)
+          .get
+          ._1 shouldBe true
+    }
+  }
+
+  property("seller contract(body), with buyer") {
+    val verifier                = new ErgoLikeTestInterpreter
+    val prover                  = new ContextEnrichingTestProvingInterpreter
+    val sellerPk                = prover.dlogSecrets.head.publicImage
+    val sellerPkProp: SigmaProp = CSigmaProp(sellerPk)
+
+    forAll(arbLong.arbitrary) {
+      case (ergAmount) =>
+        val tx = createTransaction(
+          IndexedSeq(
+            ErgoBox(value = 1, ergoTree = TrivialProp.TrueProp, creationHeight = 0),
+            ErgoBox(
+              value               = ergAmount,
+              ergoTree            = sellerPk,
+              creationHeight      = 0,
+              additionalRegisters = Map(ErgoBox.R4 -> ByteArrayConstant(fakeSelf.id))
+            )
+          )
+        )
+        val prop =
+          AssetsAtomicExchangeBodyCompilation.sellerContract(ergAmount, sellerPkProp)
+
+        val ctxBeforeDeadline = ctx(50, tx)
+        verifier
+          .verify(prop, ctxBeforeDeadline, ProverResult.empty, fakeMessage)
           .get
           ._1 shouldBe true
     }
