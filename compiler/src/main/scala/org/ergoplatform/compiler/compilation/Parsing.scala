@@ -44,6 +44,7 @@ import sigmastate.Values.{
 }
 import sigmastate.utxo.{
   ByIndex,
+  ExtractAmount,
   ExtractId,
   ExtractRegisterAs,
   ExtractScriptBytes,
@@ -99,7 +100,8 @@ trait Parsing {
     case `identParser`(v)        => v
 
     // "catch them all" type of case, needs to be last
-    case t: Tree => ScalaTree(t)
+    case `capturedValParser`(v) => v
+//    case t: Tree                => ScalaTree(t)
   }
 
   // TODO: wtf?
@@ -138,9 +140,10 @@ trait Parsing {
   }
 
   val capturedValParser: Parser[ScalaTree] = Parser[ScalaTree] {
-    case t @ Select(_, _) => ScalaTree(t)
+//    case t: Select if is[SigmaContractDsl](t.qualifier) => c.fail(s"add parsing of: $t")
+//    case t: Select if is[SigmaContextDsl](t.qualifier)  => c.fail(s"add parsing of: $t")
     case t: Tree =>
-      c.info(s"Inlining non Select: $t")
+      c.info(s"Capturing: $t")
       ScalaTree(t)
   }
 
@@ -203,6 +206,7 @@ trait Parsing {
 
   val collApiParser: Parser[SValue] = Parser[SValue] {
     case q"${collValueParser(c)}.nonEmpty"                    => GT(SizeOf(c), IntConstant(0))
+    case q"${collValueParser(c)}.size"                        => SizeOf(c)
     case q"${collValueParser(c)}.apply(${intValueParser(i)})" => ByIndex(c, i)
   }
 
@@ -225,6 +229,8 @@ trait Parsing {
       )
     case q"$s.propositionBytes" if isTypeBox(s.tpe) =>
       ExtractScriptBytes(astParser(s).asBox)
+    case q"$s.value" if isTypeBox(s.tpe) =>
+      ExtractAmount(astParser(s).asBox)
   }
 
   val sigmaPropApiParser: Parser[SValue] = Parser[SValue] {

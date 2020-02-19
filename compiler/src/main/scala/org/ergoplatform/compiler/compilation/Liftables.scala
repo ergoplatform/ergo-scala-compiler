@@ -48,6 +48,7 @@ import sigmastate.lang.Terms.ValueOps
 import sigmastate.utxo.{
   ByIndex,
   Extract,
+  ExtractAmount,
   ExtractBytes,
   ExtractId,
   ExtractRegisterAs,
@@ -189,6 +190,7 @@ trait Liftables extends Types {
       case ExtractBytes(b)                => q"$supack.ExtractBytes($b)"
       case ExtractId(b)                   => q"$supack.ExtractId($b)"
       case ExtractScriptBytes(b)          => q"$supack.ExtractScriptBytes($b)"
+      case ExtractAmount(b)               => q"$supack.ExtractAmount($b)"
       case OptionGet(i)                   => q"$supack.OptionGet($i)"
       case SigmaPropBytes(i)              => q"$supack.SigmaPropBytes($i)"
       case v @ _                          => c.fail(s"no Liftable for Transformer: $v")

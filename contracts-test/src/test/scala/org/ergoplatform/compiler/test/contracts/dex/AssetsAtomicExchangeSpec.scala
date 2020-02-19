@@ -248,6 +248,16 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
+  property("seller contract(body): ergo tree") {
+    forAll(arbLong.arbitrary, proveDlogGen) {
+      case (ergAmount, proveDlogPk) =>
+        val pk: SigmaProp = CSigmaProp(proveDlogPk)
+        val prop          = AssetsAtomicExchangeBodyCompilation.sellerContract(ergAmount, pk)
+        val expectedProp  = sellerContractExpectedProp(proveDlogPk, ergAmount)
+        prop shouldEqual expectedProp
+    }
+  }
+
   ignore("seller contract(method call): ergo tree") {
     forAll(arbLong.arbitrary, proveDlogGen) {
       case (ergAmount, proveDlogPk) =>
