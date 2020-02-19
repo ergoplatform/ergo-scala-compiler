@@ -5,7 +5,7 @@ import org.ergoplatform.sigma.verified._
 
 import scala.language.{implicitConversions, postfixOps}
 
-sealed abstract class AssetsAtomicExchangeVerified extends SigmaContract {
+abstract class AssetsAtomicExchangeVerified extends SigmaContract {
 
   def buyer(
     ctx: Context,
@@ -44,20 +44,20 @@ sealed abstract class AssetsAtomicExchangeVerified extends SigmaContract {
   }
 }
 
-object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerified {
-
-  def buyerContractInstance(
-    tokenId: Coll[Byte],
-    tokenAmount: Long,
-    pkA: SigmaProp
-  ): ErgoContract =
-    ErgoScalaCompiler.contractVerified { context: Context =>
-      buyer(context, tokenId, tokenAmount, pkA)
-    }
-
-  def sellerContractInstance(ergAmount: Long, pkB: SigmaProp): ErgoContract =
-    ErgoScalaCompiler.contractVerified { context: Context =>
-      seller(context, ergAmount, pkB)
-    }
-
-}
+//object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerified {
+//
+//  def buyerContractInstance(
+//    tokenId: Coll[Byte],
+//    tokenAmount: Long,
+//    pkA: SigmaProp
+//  ): ErgoContract =
+//    ErgoScalaCompiler.contractVerified { context: Context =>
+//      buyer(context, tokenId, tokenAmount, pkA)
+//    }
+//
+//  def sellerContractInstance(ergAmount: Long, pkB: SigmaProp): ErgoContract =
+//    ErgoScalaCompiler.contractVerified { context: Context =>
+//      seller(context, ergAmount, pkB)
+//    }
+//
+//}

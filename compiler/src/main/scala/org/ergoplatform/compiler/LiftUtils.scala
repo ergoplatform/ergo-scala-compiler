@@ -12,7 +12,7 @@ import sigmastate.eval.Evaluation.rtypeToSType
 import sigmastate.lang.{DefaultSigmaBuilder, SigmaBuilder}
 import special.collection.{Coll, CollOverArrayBuilder}
 
-object util {
+object LiftUtils {
 
   val builder: SigmaBuilder = DefaultSigmaBuilder
 
