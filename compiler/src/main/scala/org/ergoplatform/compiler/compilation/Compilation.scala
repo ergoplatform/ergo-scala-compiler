@@ -19,7 +19,7 @@ trait Compilation extends Parsing with Liftables {
     c.info(s"SValue: $prop")
     val tree =
 //      c.untypecheck {
-      q"""ErgoContract(
+      q"""org.ergoplatform.compiler.ErgoContract(
             {_ => ??? },
             $prop
           )"""
