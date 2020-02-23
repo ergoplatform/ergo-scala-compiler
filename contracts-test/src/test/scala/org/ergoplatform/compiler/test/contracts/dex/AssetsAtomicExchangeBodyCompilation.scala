@@ -1,5 +1,6 @@
 package org.ergoplatform.compiler.test.contracts.dex
 
+import org.ergoplatform.compiler.ErgoContract
 import org.ergoplatform.compiler.ErgoScalaCompiler._
 import org.ergoplatform.compiler.test.ObjectGenerators._
 import special.collection.Coll
@@ -27,7 +28,7 @@ object AssetsAtomicExchangeBodyCompilation {
     tokenId: Coll[Byte],
     tokenAmount: Long,
     buyerPk: SigmaProp
-  ): SigmaPropValue =
+  ): ErgoContract =
     contract {
       buyerPk || {
         (OUTPUTS.nonEmpty && OUTPUTS(0).R4[Coll[Byte]].isDefined) && {
@@ -42,7 +43,7 @@ object AssetsAtomicExchangeBodyCompilation {
       }
     }
 
-  def sellerContract(askNanoErgs: Long, sellerPk: SigmaProp): SigmaPropValue =
+  def sellerContract(askNanoErgs: Long, sellerPk: SigmaProp): ErgoContract =
     contract {
       sellerPk || (
         OUTPUTS.size > 1 &&

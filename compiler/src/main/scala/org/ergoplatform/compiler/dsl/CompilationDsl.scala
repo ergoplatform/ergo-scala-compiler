@@ -11,7 +11,7 @@ import scala.reflect.macros.whitebox
 
 trait CompilationDsl {
 
-  def contract[A](body: A): SigmaPropValue = macro CompilationMacro.compileBody[A]
+  def contract[A](body: A): ErgoContract = macro CompilationMacro.compileBody[A]
 
   def contractVerified[A, B](func: A => B): ErgoContract =
     macro CompilationMacro.compileVerified[A, B]
