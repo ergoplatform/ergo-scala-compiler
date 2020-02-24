@@ -2,27 +2,10 @@ package org.ergoplatform.compiler.test.contracts.dex
 
 import org.ergoplatform.compiler.ErgoContract
 import org.ergoplatform.compiler.ErgoScalaCompiler._
-import org.ergoplatform.compiler.test.ObjectGenerators._
 import special.collection.Coll
 import special.sigma.SigmaProp
-import sigmastate.lang.Terms.ValueOps
-import sigmastate.Values.{SValue, SigmaPropValue}
 
 object AssetsAtomicExchangeBodyCompilation {
-
-//  val tokenId: Coll[Byte] = newTokenId
-//
-//  val buyerBidTokenAmount = 100L
-//  var buyerPk: SigmaProp  = newPK
-//  val sellerPk: SigmaProp = newPK
-//  val sellerAskNanoErgs   = 50000000
-//
-//  val capturedInt  = 999
-//  val capturedInt2 = 999
-
-//  val dummyContract = contract {
-//    capturedInt + capturedInt2
-//  }
 
   def buyerContract(
     tokenId: Coll[Byte],

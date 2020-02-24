@@ -45,8 +45,8 @@ abstract class AssetsAtomicExchangeVerified extends SigmaContract {
   }
 }
 
-object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerified {
-
+//object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerified {
+//
 //  def buyerContractInstance(
 //    tokenId: Coll[Byte],
 //    tokenAmount: Long,
@@ -55,10 +55,10 @@ object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerif
 //    ErgoScalaCompiler.contractVerified { context: Context =>
 //      buyer(context, tokenId, tokenAmount, pkA)
 //    }
-
+//
 //  def sellerContractInstance(ergAmount: Long, pkB: SigmaProp): ErgoContract =
 //    ErgoScalaCompiler.contractVerified { context: Context =>
 //      seller(context, ergAmount, pkB)
 //    }
-
-}
+//
+//}

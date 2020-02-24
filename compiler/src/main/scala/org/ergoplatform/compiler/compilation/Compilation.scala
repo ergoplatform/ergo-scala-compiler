@@ -65,9 +65,13 @@ trait Compilation extends Parsing with Liftables {
       .collect { case app: Apply => app }
       .headOption
       .getOrElse(c.fail("cannot find Apply for the contract method"))
-    c.info(s"contract method Apply args: ${compilingContractApp.args}")
+    c.info(
+      s"contract method Apply args: ${compilingContractApp.args} \n raw: ${compilingContractApp.args
+        .map(showRaw(_))
+        .mkString(",")}"
+    )
     val argsStr = compilingContractApp.args
-      .flatMap(_.collect { case Ident(name) => name.toString })
+      .flatMap(_.collect { case Ident(TermName(name)) => name })
       .filterNot(_ == "org")
       .mkString(",")
     if (argsStr.isEmpty) c.fail("no arguments provided for the contract call")
@@ -124,9 +128,11 @@ trait Compilation extends Parsing with Liftables {
       .collect { case app: Apply => app }
       .headOption
       .getOrElse(c.fail("cannot find Apply for the contract method"))
-    val appArgs = compilingContractApp.args.flatMap(_.collect {
-      case Ident(name) => name.toString
-    })
+    val appArgs = compilingContractApp.args
+      .flatMap(_.collect {
+        case Ident(TermName(name)) => name
+      })
+      .filterNot(_ == "org")
 
     val defDefArgNames = defDef.vparamss.head.collect {
       case ValDef(_, name, _, _) => name.toString
@@ -138,10 +144,14 @@ trait Compilation extends Parsing with Liftables {
     val sigmaProp = astParser(defDef.rhs)
     c.info(s"compiled ergo tree: $sigmaProp")
     // TODO: restore contractTree for scalaFunc
+    val removedBlockValue = sigmaProp match {
+      case BlockValue(IndexedSeq(), body) => body
+      case v                              => v
+    }
     q"""
       ErgoContract(
-        {_ => ???},
-        $sigmaProp
+        $contractTree,
+        $removedBlockValue
       )
      """
   }
@@ -171,7 +181,7 @@ trait Compilation extends Parsing with Liftables {
       case ValDef(_, name, _, _) => name.toString
     }
     val paramMap = defDefArgNames.zip(appArgs).toMap
-    c.info(s"paramMAp: $paramMap")
+    c.info(s"paramMap: $paramMap")
 
     callArgToIdentMap = paramMap
     val sigmaProp = astParser(defDef.rhs)

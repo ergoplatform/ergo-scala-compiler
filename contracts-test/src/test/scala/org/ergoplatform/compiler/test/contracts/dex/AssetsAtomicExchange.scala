@@ -54,7 +54,6 @@ object AssetsAtomicExchangeCompilation extends AssetsAtomicExchange {
     tokenAmount: Long,
     pkA: SigmaProp
   ): ErgoContract =
-//    val pkC = CSigmaProp(TrivialProp(true))
     ErgoScalaCompiler.contract { context: Context =>
       buyer(context, tokenId, tokenAmount, pkA)
     }
