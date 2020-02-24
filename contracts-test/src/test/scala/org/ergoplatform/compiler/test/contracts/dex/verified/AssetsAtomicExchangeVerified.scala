@@ -1,6 +1,7 @@
 package org.ergoplatform.compiler.test.contracts.dex.verified
 
-import org.ergoplatform.compiler._
+//import org.ergoplatform.compiler._
+import org.ergoplatform.compiler.{ErgoContract, ErgoScalaCompiler}
 import org.ergoplatform.sigma.verified._
 
 import scala.language.{implicitConversions, postfixOps}
@@ -44,8 +45,8 @@ abstract class AssetsAtomicExchangeVerified extends SigmaContract {
   }
 }
 
-//object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerified {
-//
+object AssetsAtomicExchangeVerifiedCompilation extends AssetsAtomicExchangeVerified {
+
 //  def buyerContractInstance(
 //    tokenId: Coll[Byte],
 //    tokenAmount: Long,
@@ -54,10 +55,10 @@ abstract class AssetsAtomicExchangeVerified extends SigmaContract {
 //    ErgoScalaCompiler.contractVerified { context: Context =>
 //      buyer(context, tokenId, tokenAmount, pkA)
 //    }
-//
+
 //  def sellerContractInstance(ergAmount: Long, pkB: SigmaProp): ErgoContract =
 //    ErgoScalaCompiler.contractVerified { context: Context =>
 //      seller(context, ergAmount, pkB)
 //    }
-//
-//}
+
+}

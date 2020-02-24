@@ -2,6 +2,7 @@ package org.ergoplatform.compiler.compilation
 
 import sigmastate.{
   SBoolean,
+  SBox,
   SByte,
   SCollectionType,
   SFunc,
@@ -26,9 +27,8 @@ trait Types {
   import c.universe.definitions._
 
   // TODO: extract
-  protected case class ScalaTree(tree: Tree) extends SValue {
+  protected case class ScalaTree(tree: Tree, override val tpe: SType) extends SValue {
     override def companion: Values.ValueCompanion = ???
-    override def tpe: SType                       = tpeToSType(tree.tpe)
     override def opType: SFunc                    = Value.notSupportedError(this, "opType")
   }
 
@@ -60,6 +60,7 @@ trait Types {
     case t @ TypeRef(_, _, targs) if isTypeTuple(t) =>
       STuple(targs.map(tpeToSType).toIndexedSeq)
     case t @ TypeRef(_, _, targs) if isTypeSigmaProp(t) => SSigmaProp
+    case t @ TypeRef(_, _, targs) if isTypeBox(t)       => SBox
     case v @ _                                          => c.fail(s"cannot convert tpe $v to SType")
   }
 

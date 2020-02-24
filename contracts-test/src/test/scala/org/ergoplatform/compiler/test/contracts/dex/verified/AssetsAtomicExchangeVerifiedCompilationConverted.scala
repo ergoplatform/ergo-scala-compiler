@@ -18,7 +18,7 @@ object AssetsAtomicExchangeVerifiedCompilationConverted
 //        buyer(context, tokenId, tokenAmount, pkA)
 //    }
 //  }
-//
+
 //  def sellerContractInstanceNonVerifiedTypes(
 //    ergAmount: Long,
 //    pkB: SigmaProp

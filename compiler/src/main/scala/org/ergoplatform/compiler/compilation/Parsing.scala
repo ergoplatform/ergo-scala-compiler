@@ -55,6 +55,7 @@ import sigmastate.utxo.{
   SizeOf
 }
 import special.collection.Coll
+import special.sigma.SigmaContract
 
 import scala.collection.mutable
 import scala.reflect.api.Trees
@@ -105,7 +106,8 @@ trait Parsing {
   }
 
   // TODO: wtf?
-  var valDefsMap = mutable.Map[String, (Int, SType)]()
+  var callArgToIdentMap: Map[String, String] = Map[String, String]()
+  var valDefsMap                             = mutable.Map[String, (Int, SType)]()
 
   val identParser: Parser[NotReadyValue[SType]] = Parser[NotReadyValue[SType]] {
 //    case t: ValDef => identClean(NamedValDef(t.name.decodedName.toString, astParser(t.rhs)))
@@ -142,9 +144,14 @@ trait Parsing {
   val capturedValParser: Parser[ScalaTree] = Parser[ScalaTree] {
 //    case t: Select if is[SigmaContractDsl](t.qualifier) => c.fail(s"add parsing of: $t")
 //    case t: Select if is[SigmaContextDsl](t.qualifier)  => c.fail(s"add parsing of: $t")
+    case i @ Ident(TermName(name)) if callArgToIdentMap.get(cname(name)).nonEmpty =>
+      val newName = callArgToIdentMap(cname(name))
+      val v       = Ident(TermName(newName))
+      c.info(s"Capturing converted($name -> $newName}): ${showRaw(v)}")
+      ScalaTree(v, tpeToSType(i.tpe))
     case t: Tree =>
-      c.info(s"Capturing: $t")
-      ScalaTree(t)
+      c.info(s"Capturing: ${showRaw(t)}")
+      ScalaTree(t, tpeToSType(t.tpe))
   }
 
   val sigmaTransParser: Parser[SigmaTransformer[_, _]] = Parser[SigmaTransformer[_, _]] {
@@ -239,13 +246,13 @@ trait Parsing {
   }
 
   val contextApiParser: Parser[SValue] = Parser[SValue] {
-    case q"$s.OUTPUTS" if is[SigmaContextDsl](s) => Outputs
-    case q"$s.SELF" if is[SigmaContextDsl](s)    => Self
+    case q"$s.OUTPUTS" if is[special.sigma.Context](s) => Outputs
+    case q"$s.SELF" if is[special.sigma.Context](s)    => Self
   }
 
   val contractApiParser: Parser[SValue] = Parser[SValue] {
-    case q"$s.HEIGHT" if is[SigmaContractDsl](s)         => Height
-    case q"$s.groupGenerator" if is[SigmaContractDsl](s) => GroupGenerator
+    case q"$s.HEIGHT" if is[SigmaContract](s)         => Height
+    case q"$s.groupGenerator" if is[SigmaContract](s) => GroupGenerator
   }
 
 }

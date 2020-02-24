@@ -4,6 +4,7 @@ import org.ergoplatform.Height
 import org.ergoplatform.compiler.ErgoContract
 import org.ergoplatform.compiler.compilation.util.RichContext
 import sigmastate.SType
+import sigmastate.Values.BlockValue
 import special.sigma.{Context, SigmaProp}
 
 import scala.collection.mutable
@@ -14,7 +15,8 @@ trait Compilation extends Parsing with Liftables {
   import c.universe._
 
   def compileBody[A](body: Tree) = {
-    valDefsMap = mutable.Map[String, (Int, SType)]()
+    valDefsMap        = mutable.Map[String, (Int, SType)]()
+    callArgToIdentMap = Map()
     val prop = astParser(body)
     c.info(s"SValue: $prop")
     val tree =
@@ -63,7 +65,7 @@ trait Compilation extends Parsing with Liftables {
       .collect { case app: Apply => app }
       .headOption
       .getOrElse(c.fail("cannot find Apply for the contract method"))
-    c.debug(compilingContractApp.args)
+    c.info(s"contract method Apply args: ${compilingContractApp.args}")
     val argsStr = compilingContractApp.args
       .flatMap(_.collect { case Ident(name) => name.toString })
       .filterNot(_ == "org")
@@ -92,7 +94,9 @@ trait Compilation extends Parsing with Liftables {
          |SigmaContractHolder.${select.name.toString}($argsStr)
          |}
          |""".stripMargin
+    c.info(s"parsing generated source: $scalaFuncSource")
     val tree = c.parse(scalaFuncSource)
+    c.info(s"parsed contract method tree: ${showRaw(tree)}")
     try {
       c.typecheck(tree)
     } catch {
@@ -127,21 +131,61 @@ trait Compilation extends Parsing with Liftables {
     val defDefArgNames = defDef.vparamss.head.collect {
       case ValDef(_, name, _, _) => name.toString
     }
-    // TODO: use it
     val paramMap = defDefArgNames.zip(appArgs).toMap
+    c.info(s"paramMAp: $paramMap")
 
+    callArgToIdentMap = paramMap
     val sigmaProp = astParser(defDef.rhs)
+    c.info(s"compiled ergo tree: $sigmaProp")
+    // TODO: restore contractTree for scalaFunc
     q"""
       ErgoContract(
-        $contractTree,
+        {_ => ???},
         $sigmaProp
       )
      """
   }
 
-  def compile(func: Expr[Context => SigmaProp]) =
-    reify(
-      ErgoContract(func.splice, reify(Height).splice)
-    )
+  def compile(func: Expr[Context => SigmaProp]) = {
+    c.info(s"compiling closure: ${showRaw(func.tree)}")
+    val contractMethodName = func.tree
+      .collect { case sel: Select => sel }
+      .headOption
+      .getOrElse(c.fail("method call for the contract is expected"))
+      .name
+      .toString
+    val contractTree = buildScalaFunc(func.tree, addVerifiedTypeConv = false)
+    val defDef = contractTree
+      .collect { case dd @ DefDef(_, TermName(`contractMethodName`), _, _, _, _) => dd }
+      .headOption
+      .getOrElse(c.fail("cannot find DefDef for the contract method"))
+    val compilingContractApp = func.tree
+      .collect { case app: Apply => app }
+      .headOption
+      .getOrElse(c.fail("cannot find Apply for the contract method"))
+    val appArgs = compilingContractApp.args.flatMap(_.collect {
+      case Ident(name) => name.toString
+    })
 
+    val defDefArgNames = defDef.vparamss.head.collect {
+      case ValDef(_, name, _, _) => name.toString
+    }
+    val paramMap = defDefArgNames.zip(appArgs).toMap
+    c.info(s"paramMAp: $paramMap")
+
+    callArgToIdentMap = paramMap
+    val sigmaProp = astParser(defDef.rhs)
+    val removedBlockValue = sigmaProp match {
+      case BlockValue(IndexedSeq(), body) => body
+      case v                              => v
+    }
+    c.info(s"compiled ergo tree: $removedBlockValue")
+
+    q"""
+      ErgoContract(
+        $contractTree,
+        $removedBlockValue
+      )
+     """
+  }
 }

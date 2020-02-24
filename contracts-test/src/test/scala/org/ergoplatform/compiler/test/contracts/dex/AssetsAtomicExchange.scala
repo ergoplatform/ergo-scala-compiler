@@ -1,6 +1,8 @@
 package org.ergoplatform.compiler.test.contracts.dex
 
 import org.ergoplatform.compiler.{ErgoContract, ErgoScalaCompiler}
+import sigmastate.TrivialProp
+import sigmastate.eval.CSigmaProp
 import special.collection.Coll
 import special.sigma.{Context, SigmaContract, SigmaDslBuilder, SigmaProp}
 
@@ -12,10 +14,10 @@ sealed abstract class AssetsAtomicExchange extends SigmaContract {
     ctx: Context,
     tokenId: Coll[Byte],
     tokenAmount: Long,
-    pkA: SigmaProp
+    buyerPk: SigmaProp
   ): SigmaProp = {
     import ctx._
-    pkA || {
+    buyerPk || {
       (OUTPUTS.nonEmpty && OUTPUTS(0).R4[Coll[Byte]].isDefined) && {
         val tokens = OUTPUTS(0).tokens
         val tokenDataCorrect = tokens.nonEmpty &&
@@ -25,7 +27,7 @@ sealed abstract class AssetsAtomicExchange extends SigmaContract {
         val knownId = OUTPUTS(0).R4[Coll[Byte]].get == SELF.id
         // TODO fix Coll.fromItems crashing Inox typer and rewrite with allOf(Coll.fromItems[Boolean](
         tokenDataCorrect &&
-        OUTPUTS(0).propositionBytes == pkA.propBytes &&
+        OUTPUTS(0).propositionBytes == buyerPk.propBytes &&
         knownId
       }
     }
@@ -52,6 +54,7 @@ object AssetsAtomicExchangeCompilation extends AssetsAtomicExchange {
     tokenAmount: Long,
     pkA: SigmaProp
   ): ErgoContract =
+//    val pkC = CSigmaProp(TrivialProp(true))
     ErgoScalaCompiler.contract { context: Context =>
       buyer(context, tokenId, tokenAmount, pkA)
     }

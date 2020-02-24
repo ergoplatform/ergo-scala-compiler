@@ -209,7 +209,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
       )
     )
 
-  ignore("buyer contract(method call): ergo tree") {
+  property("buyer contract(method call): ergo tree") {
     forAll(tokenIdGen.map(_.toColl), arbLong.arbitrary, proveDlogGen) {
       case (tokenId, tokenAmount, proveDlogPk) =>
         val pk: SigmaProp = CSigmaProp(proveDlogPk)
@@ -258,7 +258,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
-  ignore("seller contract(method call): ergo tree") {
+  property("seller contract(method call): ergo tree") {
     forAll(arbLong.arbitrary, proveDlogGen) {
       case (ergAmount, proveDlogPk) =>
         val pk: SigmaProp = CSigmaProp(proveDlogPk)
@@ -317,7 +317,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     testTreeBuyerContractCancels(AssetsAtomicExchangeBodyCompilation.buyerContract)
   }
 
-  ignore("buyer contract(method call), buyer claim") {
+  property("buyer contract(method call), buyer claim") {
     testTreeBuyerContractCancels(
       AssetsAtomicExchangeCompilation.buyerContractInstance
     )
@@ -411,7 +411,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
-  ignore("buyer contract, tokens") {
+  property("buyer contract, tokens") {
     val verifier           = new ErgoLikeTestInterpreter
     val prover             = new ContextEnrichingTestProvingInterpreter
     val pubkey             = prover.dlogSecrets.head.publicImage
@@ -446,7 +446,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
-  ignore("seller contract, seller claim") {
+  property("seller contract, seller claim") {
     val prover    = new ContextEnrichingTestProvingInterpreter
     val verifier  = new ErgoLikeTestInterpreter
     val ergAmount = 100L
@@ -502,7 +502,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     verifier.verify(tree, context, pr, fakeMessage).get._1 shouldBe true
   }
 
-  ignore("seller contract, no buyer") {
+  property("seller contract, no buyer") {
     val verifier            = new ErgoLikeTestInterpreter
     val prover              = new ContextEnrichingTestProvingInterpreter
     val pubkey              = prover.dlogSecrets.head.publicImage
@@ -551,7 +551,7 @@ class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators
     }
   }
 
-  ignore("seller contract, with buyer") {
+  property("seller contract, with buyer") {
     val verifier                = new ErgoLikeTestInterpreter
     val prover                  = new ContextEnrichingTestProvingInterpreter
     val sellerPk                = prover.dlogSecrets.head.publicImage

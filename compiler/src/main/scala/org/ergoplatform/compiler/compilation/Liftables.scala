@@ -144,6 +144,7 @@ trait Liftables extends Types {
     case SInt       => q"$spack.SInt"
     case SLong      => q"$spack.SLong"
     case SSigmaProp => q"$spack.SSigmaProp"
+    case SBox       => q"$spack.SBox"
     case SCollectionType(eT) =>
       q"new $spack.SCollectionType($eT)" // otherwise scalac choose object with the same name
     case STuple(items) => q"$spack.STuple(..$items)"
@@ -222,7 +223,7 @@ trait Liftables extends Types {
   }
 
   implicit val scalaTreeLiftable: Liftable[ScalaTree] = Liftable[ScalaTree] {
-    case st @ ScalaTree(t) => q"$svpack.Constant[${st.tpe}]($t, ${st.tpe})"
+    case st @ ScalaTree(t, tpe) => q"$svpack.Constant[$tpe]($t, $tpe)"
   }
 
 //  implicit val relationLiftable: Liftable[Relation[SType, SType]] =
