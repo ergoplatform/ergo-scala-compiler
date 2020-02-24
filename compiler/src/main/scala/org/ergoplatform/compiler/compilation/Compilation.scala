@@ -51,7 +51,7 @@ trait Compilation extends Parsing with Liftables {
     addVerifiedTypeConv: Boolean
   ): Tree = {
     val select = compilingClosure
-      .collect { case sel: Select => sel }
+      .collect { case Apply(sel @ Select(_, _), _) => sel }
       .headOption
       .getOrElse(c.fail("method call for the contract is expected"))
     val defdefSource = findContractDefDef(select)
