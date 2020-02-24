@@ -106,8 +106,8 @@ trait Parsing {
   }
 
   // TODO: wtf?
-  var callArgToIdentMap: Map[String, String] = Map[String, String]()
-  var valDefsMap                             = mutable.Map[String, (Int, SType)]()
+  var callArgToIdentMap: Map[String, String]        = Map[String, String]()
+  var valDefsMap: mutable.Map[String, (Int, SType)] = mutable.Map[String, (Int, SType)]()
 
   val identParser: Parser[NotReadyValue[SType]] = Parser[NotReadyValue[SType]] {
 //    case t: ValDef => identClean(NamedValDef(t.name.decodedName.toString, astParser(t.rhs)))
