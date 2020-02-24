@@ -1,5 +1,4 @@
 import scala.language.postfixOps
-import scala.util.Try
 
 lazy val commonSettings = Seq(
   scalacOptions ++= commonScalacOptions,
@@ -34,18 +33,44 @@ lazy val dependencies = Seq(
 )
 
 lazy val testingDependencies = Seq(
-  "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+  "org.scalatest" %% "scalatest" % "3.0.5" % Test,
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test
 )
 
-lazy val rootProject = project
+lazy val root = project
   .in(file("."))
   .withId("ergo-scala-compiler")
+  .settings(commonSettings)
+  .settings(publish / skip := true)
+  .aggregate(compiler, contractsTest)
+
+lazy val compiler = project
+  .in(file("compiler"))
+  .withId("compiler")
   .settings(commonSettings)
   .settings(moduleName := "ergo-scala-compiler")
   .settings(
     libraryDependencies ++= dependencies ++ testingDependencies
   )
+  .settings(
+    scalacOptions ++= Seq(
+      "-Xlog-free-terms",
+      //      "-Ymacro-debug-lite"
+    )
+  )
+
+lazy val contractsTest = project
+  .in(file("contracts-test"))
+  .withId("contracts-test")
+  .settings(commonSettings)
+  .settings(moduleName := "verified-contracts-test")
+  .dependsOn(compiler % allConfigDependency)
+  .settings(
+    libraryDependencies ++= dependencies ++ testingDependencies ++ Seq(
+      "org.ergoplatform" %% "verified-contracts" % "0.0.0-5-ee53f015-SNAPSHOT",
+    )
+  )
+  .settings(publish / skip := true)
   .settings(
     scalacOptions ++= Seq(
       "-Xlog-free-terms",
@@ -59,7 +84,6 @@ lazy val commonScalacOptions = List(
   "-Xfatal-warnings",
   "-unchecked",
   "-Yno-adapted-args",
-  "-Ywarn-numeric-widen"
 )
 
 
