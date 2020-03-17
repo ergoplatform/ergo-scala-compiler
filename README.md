@@ -1,6 +1,6 @@
 # ErgoScala compiler
 
-Compiler for Ergo smart contracts written in ErgoScala, subset of Scala language. Compilation from formally verified smart contracts from [ergo-contracts](https://github.com/ergoplatform/ergo-contracts) is supported.
+Compiler for Ergo smart contracts written in ErgoScala (a subset of Scala). Compilation from formally verified smart contracts from [ergo-contracts](https://github.com/ergoplatform/ergo-contracts) is supported.
 
 # Usage
 
@@ -10,12 +10,12 @@ Compiler for Ergo smart contracts written in ErgoScala, subset of Scala language
 
 Compilation results in producing `ErgoContract` that provides:
 
-- `ErgoTree` instance, Ergo's IR, which is used to define logical propositions protecting boxes (generalization of coins) in the Ergo blockchain. Serialized ErgoTree expressions are written into UTXO boxes and then evaluated by the transaction verifier;
-- Scala anonymous function that when called with a `Context` parameter evaluates(reduces) the contract code to a sigma property. It allow to "call" the contract code without loading up the interpreter.
+- `ErgoTree` instance, Ergo's IR, which is used to define logical propositions protecting boxes (a generalization of coins) in the Ergo blockchain. Serialized ErgoTree expressions are written into UTXO boxes and then evaluated by the transaction verifier;
+- Scala anonymous function that when called with a `Context` parameter evaluates(reduces) the contract code to a sigma property. It allows us to "call" the contract code without loading up the interpreter.
 
 ## Example
 
-### Contract code in `contract` call
+### Contract code in  `contract` call
 Ergo contract code can be compiled with `ErgoScalaCompiler.contract` call:
 ```scala
   import org.ergoplatform.compiler.ErgoScalaCompiler
@@ -41,7 +41,7 @@ Ergo contract code can be compiled with `ErgoScalaCompiler.contract` call:
 ```
 
 ### Verified contract code in a separate method call
-For verified contract compilation is done differently. Formal verification is done using Stainless in [ergo-contracts](https://github.com/ergoplatform/ergo-contracts). Verified contract code can be compiled by providing the method call where contract code resides.
+For verified contracts, the compilation is done differently. Formal verification is done using Stainless in [ergo-contracts](https://github.com/ergoplatform/ergo-contracts). Verified contract code can be compiled by providing the method call where contract code resides.
 ```scala
   def buyerContractInstance(tokenId: Coll[Byte], tokenAmount: Long, pkA: SigmaProp): ErgoContract =
     ErgoContractCompiler.compile { context: Context =>
