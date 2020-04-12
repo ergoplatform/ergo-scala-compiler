@@ -86,6 +86,8 @@ lazy val commonScalacOptions = List(
   "-Xfatal-warnings",
   "-unchecked",
   "-Yno-adapted-args",
+  "-Ywarn-unused-import",
+  "-Ywarn-unused:imports",
 )
 
 

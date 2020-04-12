@@ -2,11 +2,9 @@ package org.ergoplatform.compiler.dsl
 
 import org.ergoplatform.compiler.ErgoContract
 import org.ergoplatform.compiler.compilation.Compilation
-import sigmastate.Values.{ErgoTree, SValue, SigmaPropValue}
 import special.sigma.{Context, SigmaProp}
 
 import scala.language.experimental.macros
-import scala.language.implicitConversions
 import scala.reflect.macros.whitebox
 
 trait CompilationDsl {

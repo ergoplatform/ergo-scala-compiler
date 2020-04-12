@@ -1,8 +1,6 @@
 package org.ergoplatform.compiler.test.contracts.dex
 
 import org.ergoplatform.compiler.{ErgoContract, ErgoScalaCompiler}
-import sigmastate.TrivialProp
-import sigmastate.eval.CSigmaProp
 import special.collection.Coll
 import special.sigma.{Context, SigmaContract, SigmaDslBuilder, SigmaProp}
 

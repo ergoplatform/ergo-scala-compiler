@@ -1,10 +1,6 @@
 package org.ergoplatform.compiler.test.contracts.dex.verified
 
-//import org.ergoplatform.compiler._
-import org.ergoplatform.compiler.{ErgoContract, ErgoScalaCompiler}
 import org.ergoplatform.sigma.verified._
-
-import scala.language.{implicitConversions, postfixOps}
 
 abstract class AssetsAtomicExchangeVerified extends SigmaContract {
 
