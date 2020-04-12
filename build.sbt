@@ -27,8 +27,10 @@ dynverSeparator in ThisBuild := "-"
 
 lazy val allConfigDependency = "compile->compile;test->test"
 
+val sigmaStateVersion = "add-ergoboxassets-trait-34536f17-SNAPSHOT"
+
 lazy val dependencies = Seq(
-  "org.scorexfoundation" %% "sigma-state" % "3.1.1" % allConfigDependency,
+  "org.scorexfoundation" %% "sigma-state" % sigmaStateVersion % allConfigDependency,
   "org.scalameta" %% "scalameta" % "4.0.0"
 )
 
