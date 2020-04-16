@@ -6,7 +6,6 @@ import org.ergoplatform.{ErgoBox, Height, Outputs, Self}
 import scala.reflect.macros.whitebox.{Context => MacroContext}
 import scala.reflect.ClassTag
 import org.ergoplatform.compiler.compilation.util.RichContext
-import org.ergoplatform.compiler.dsl.{CoreDsl, SigmaContextDsl, SigmaContractDsl}
 import sigmastate.{
   BinAnd,
   BinOr,
@@ -19,10 +18,7 @@ import sigmastate.{
   Relation,
   SByte,
   SCollection,
-  SCollectionType,
-  SFunc,
   SOption,
-  STuple,
   SType,
   SigmaAnd,
   SigmaOr,
@@ -31,9 +27,7 @@ import sigmastate.{
 }
 import sigmastate.lang.Terms.ValueOps
 import sigmastate.Values.{
-  BlockItem,
   BlockValue,
-  BoxValue,
   GroupGenerator,
   IntConstant,
   IntValue,
@@ -54,7 +48,6 @@ import sigmastate.utxo.{
   SigmaPropBytes,
   SizeOf
 }
-import special.collection.Coll
 import special.sigma.SigmaContract
 
 import scala.collection.mutable

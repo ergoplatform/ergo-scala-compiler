@@ -7,18 +7,13 @@ import sigmastate.{
   BinAnd,
   BinOr,
   BoolToSigmaProp,
-  CreateProveDlog,
   EQ,
   GE,
   GT,
-  Relation,
   SBoolean,
   SBox,
   SByte,
-  SCollection,
   SCollectionType,
-  SFunc,
-  SGenericType,
   SInt,
   SLong,
   SOption,
@@ -28,17 +23,12 @@ import sigmastate.{
   SType,
   STypeVar,
   SigmaOr,
-  SigmaTransformer,
-  Values
+  SigmaTransformer
 }
 import sigmastate.Values.{
   BlockItem,
   BlockValue,
-  BoolValue,
   IntConstant,
-  NotReadyValue,
-  NotReadyValueBoolean,
-  SValue,
   SigmaPropValue,
   ValDef,
   ValUse,
@@ -47,7 +37,6 @@ import sigmastate.Values.{
 import sigmastate.lang.Terms.ValueOps
 import sigmastate.utxo.{
   ByIndex,
-  Extract,
   ExtractAmount,
   ExtractBytes,
   ExtractId,

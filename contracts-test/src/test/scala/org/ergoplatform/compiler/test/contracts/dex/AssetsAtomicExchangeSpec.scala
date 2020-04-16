@@ -22,9 +22,8 @@ import sigmastate.serialization.generators.ObjectGenerators
 import sigmastate.utxo._
 import special.collection.Coll
 import special.sigma.SigmaProp
-import sigmastate.lang.Terms.ValueOps
 
-import scala.language.{implicitConversions, postfixOps}
+import scala.language.implicitConversions
 
 class AssetsAtomicExchangeSpec extends SigmaTestingCommons with ObjectGenerators {
 
