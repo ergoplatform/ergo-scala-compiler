@@ -31,6 +31,7 @@ trait Compilation extends Parsing with Liftables {
 
   private def findContractDefDef(select: Select): String = {
     import scala.meta._
+    // c.warn(s"getting file path for $select")
     val path   = select.symbol.pos.source.file.file.toPath
     val source = new String(java.nio.file.Files.readAllBytes(path), "UTF-8")
     val input  = Input.VirtualFile(path.toString, source)
@@ -148,12 +149,15 @@ trait Compilation extends Parsing with Liftables {
       case BlockValue(IndexedSeq(), body) => body
       case v                              => v
     }
+    c.info(s"unwrapped BlockValue: $unwrappedBlockValue")
+    // c.untypecheck {
     q"""
       ErgoContract(
         $assembledContractBodyScalaTree,
         $unwrappedBlockValue
       )
      """
+    // }
   }
 
   def compileVerified[A, B](func: Expr[A => B]) =

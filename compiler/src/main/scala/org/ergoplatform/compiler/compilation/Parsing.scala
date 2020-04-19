@@ -52,6 +52,9 @@ import special.sigma.SigmaContract
 
 import scala.collection.mutable
 import scala.reflect.api.Trees
+import sigmastate.serialization.OpCodes
+import sigmastate.ArithOp
+import sigmastate.Values.LongConstant
 
 trait Parsing {
   this: Compilation =>
@@ -81,10 +84,12 @@ trait Parsing {
 
   val astParser: Parser[SValue] = Parser[SValue] {
     case q"$i: $typ"             => astParser(i)
+    case `constParser`(v)        => v
     case `contextApiParser`(v)   => v
     case `contractApiParser`(v)  => v
     case `sigmaTransParser`(v)   => v
     case `relationParser`(v)     => v
+    case `twoArgOpParser`(v)     => v
     case `collApiParser`(v)      => v
     case `boxApiParser`(v)       => v
     case `sigmaPropApiParser`(v) => v
@@ -98,7 +103,7 @@ trait Parsing {
 //    case t: Tree                => ScalaTree(t)
   }
 
-  // TODO: wtf?
+  // TODO: remove?
   var callArgToIdentMap: Map[String, String]        = Map[String, String]()
   var valDefsMap: mutable.Map[String, (Int, SType)] = mutable.Map[String, (Int, SType)]()
 
@@ -137,14 +142,16 @@ trait Parsing {
   val capturedValParser: Parser[ScalaTree] = Parser[ScalaTree] {
 //    case t: Select if is[SigmaContractDsl](t.qualifier) => c.fail(s"add parsing of: $t")
 //    case t: Select if is[SigmaContextDsl](t.qualifier)  => c.fail(s"add parsing of: $t")
-    case i @ Ident(TermName(name)) if callArgToIdentMap.get(cname(name)).nonEmpty =>
-      val newName = callArgToIdentMap(cname(name))
-      val v       = Ident(TermName(newName))
+    case i @ Ident(TermName(name)) =>
+      val newName =
+        if (callArgToIdentMap.get(cname(name)).nonEmpty) callArgToIdentMap(cname(name))
+        else name
+      val v = Ident(TermName(newName))
       c.info(s"Capturing converted($name -> $newName}): ${showRaw(v)}")
       ScalaTree(v, tpeToSType(i.tpe))
     case t: Tree =>
-      c.info(s"Capturing: ${showRaw(t)}")
-      ScalaTree(t, tpeToSType(t.tpe))
+      c.fail(s"Capturing non-Ident node: ${showRaw(t)}")
+    // ScalaTree(t, tpeToSType(t.tpe))
   }
 
   val sigmaTransParser: Parser[SigmaTransformer[_, _]] = Parser[SigmaTransformer[_, _]] {
@@ -189,9 +196,25 @@ trait Parsing {
     case Apply(Select(astParser(l), TermName("$less")), Seq(astParser(r)))    => LT(l, r)
   }
 
+  val twoArgOpParser: Parser[SValue] = Parser[SValue] {
+    case Apply(Select(astParser(l), TermName("$times")), Seq(astParser(r))) =>
+      ArithOp(l, r, OpCodes.MultiplyCode)
+    case Apply(Select(astParser(l), TermName("$plus")), Seq(astParser(r))) =>
+      ArithOp(l, r, OpCodes.PlusCode)
+    case Apply(Select(astParser(l), TermName("$minus")), Seq(astParser(r))) =>
+      ArithOp(l, r, OpCodes.MinusCode)
+  }
+
   val tupleParser: Parser[SValue] = Parser[SValue] {
     case q"$s._1" if isTypeTuple(s.tpe) => SelectField(astParser(s).asTuple, 1)
     case q"$s._2" if isTypeTuple(s.tpe) => SelectField(astParser(s).asTuple, 2)
+  }
+
+  val constParser: Parser[SValue] = Parser[SValue] {
+    case Literal(ct @ c.universe.Constant(i)) if ct.tpe == IntTpe =>
+      IntConstant(i.asInstanceOf[Int])
+    case Literal(ct @ c.universe.Constant(i)) if ct.tpe == LongTpe =>
+      LongConstant(i.asInstanceOf[Long])
   }
 
   val intValueParser: Parser[IntValue] = Parser[IntValue] {
