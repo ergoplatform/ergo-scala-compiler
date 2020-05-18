@@ -16,6 +16,7 @@ trait ErgoScriptCompilationDsl {
   implicit private var IR: CompiletimeIRContext = new CompiletimeIRContext()
 
   private def compile(env: ScriptEnv, ergoScript: String): ErgoContract = {
+    IR.resetContext()
     val liftedEnv = env.mapValues { v =>
       val tV      = Evaluation.rtypeOf(v).get
       val elemTpe = Evaluation.rtypeToSType(tV)
