@@ -7,7 +7,7 @@ lazy val commonSettings = Seq(
   resolvers += Resolver.sonatypeRepo("public"),
   licenses := Seq("CC0" -> url("https://creativecommons.org/publicdomain/zero/1.0/legalcode")),
   homepage := Some(url("https://github.com/ergoplatform/ergo-scala-compiler")),
-  description := "ErgoScala to ErgoTree compiler",
+  description := "ErgoScala and ErgoScript to ErgoTree compiler",
   pomExtra :=
       <developers>
         <developer>
@@ -17,7 +17,14 @@ lazy val commonSettings = Seq(
         </developer>
       </developers>,
   publishMavenStyle := true,
-  publishTo := sonatypePublishToBundle.value
+  publishTo := sonatypePublishToBundle.value,
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/ergoplatform/ergo-scala-compiler"),
+      "scm:git@github.com:ergoplatform/ergo-scala-compiler.git"
+    )
+  ),
+
 )
 
 // prefix version with "-SNAPSHOT" for builds without a git tag
@@ -27,7 +34,7 @@ dynverSeparator in ThisBuild := "-"
 
 lazy val allConfigDependency = "compile->compile;test->test"
 
-val sigmaStateVersion = "add-ergotree-template-0e547557-SNAPSHOT"
+val sigmaStateVersion = "3.2.1"
 
 lazy val dependencies = Seq(
   "org.scorexfoundation" %% "sigma-state" % sigmaStateVersion % allConfigDependency,
