@@ -1,0 +1,37 @@
+name: Snapshot
+on:
+  push:
+    branches: ["*"]
+    tags-ignore: ["v*"]
+jobs:
+  formatting:
+    name: Check code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v5
+      - name: Run scalafmt
+        run: sbt scalafmtCheck
+
+  build:
+    name: Build and run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v5
+      - name: Run tests
+        run: sbt test
+
+  snapshot:
+    name: Publish snapshot to Sonatype
+    needs: [build, formatting]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v5
+      - name: Publish snapshot ${{ github.ref }}
+        run: sbt publish
+        env:
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+
