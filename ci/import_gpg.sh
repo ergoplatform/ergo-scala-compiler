@@ -12,7 +12,7 @@ chmod 600 ~/.gnupg/*
 echo RELOADAGENT | gpg-connect-agent
 
 # public key should be submitted to any public key server
-# e.g. http://keys.gnupg.net/
+# e.g. http://pgp.mit.edu/pks/add
 # on macOS: gpg --armor --export [id] | pbcopy
 
 # decode private key
