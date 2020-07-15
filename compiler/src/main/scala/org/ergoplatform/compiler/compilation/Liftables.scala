@@ -51,6 +51,7 @@ import sigmastate.utxo.{
 }
 
 import scala.reflect.macros.whitebox
+import sigmastate.ArithOp
 
 trait Liftables extends Types {
   val c: whitebox.Context
@@ -102,10 +103,11 @@ trait Liftables extends Types {
     case IntConstant(v)              => q"$svpack.IntConstant($v)"
     case ast: SigmaTransformer[_, _] => sigmaTransLiftable(ast)
     case ast: Transformer[_, _]      => transLiftable(ast)
+    case ast: ArithOp[_]             => arithOpLiftable(ast)
 //    case ast: Relation[_, _]                    => relationLiftable(ast.asInstanceOf[Relation[SType, SType]])
     case BlockValue(stats, res) =>
       // TODO: WTF with list?
-      q"$svpack.BlockValue(${stats.toList}.toIndexedSeq, $res)"
+      q"$svpack.BlockValue(${stats.toList}.toIndexedSeq, $res).asInstanceOf[$svpack.Value[${res.tpe}]]"
     case ast: Value[_] if ast.tpe == SSigmaProp => sigmaPropLiftable(ast.asSigmaProp)
 //    case ast: NotReadyValue[_] if ast.tpe == SBoolean =>
 //      notReadyBoolValueLiftable(ast.asInstanceOf[NotReadyValueBoolean])
@@ -169,6 +171,12 @@ trait Liftables extends Types {
 //    case Outputs => q"$epack.Outputs"
 //    case v @ _   => c.fail(s"no Liftable for Coll: $v")
 //  }
+
+  implicit def arithOpLiftable[T <: SType]: Liftable[ArithOp[T]] = Liftable[ArithOp[T]] {
+    case ArithOp(l, r, opCode) =>
+      q"$spack.ArithOp($l, $r, $opCode.asInstanceOf[sigmastate.serialization.OpCodes.OpCode])"
+    case v @ _ => c.fail(s"no Liftable for ArithOp: $v")
+  }
 
   implicit def transLiftable[IV <: SType, OV <: SType]: Liftable[Transformer[IV, OV]] =
     Liftable[Transformer[IV, OV]] {
